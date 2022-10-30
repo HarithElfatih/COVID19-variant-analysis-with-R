@@ -1,0 +1,105 @@
+---
+title: "covid_variant_analysis"
+author: "ELharith Mohamed"
+date: "2022-10-05"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Cleaning your Work Space
+```{r}
+rm(list = ls())
+```
+
+# Loading our Libraries
+
+```{r}
+library(tidyverse)
+library(lubridate)
+library(reshape2)
+library(readxl)
+library(data.table)
+library(scales)
+```
+
+# Loading the GISAID Covid Data
+```{r}
+tb <- fread("variant_surveillance_2022_09_12.tsv")
+
+```
+
+# Inspecting Our Data
+```{r}
+head(tb)
+```
+
+# Selecting our Desired data
+```{r}
+desired_Gisaid <- tb %>% dplyr:: select(3,9,11)
+head(desired_Gisaid)
+```
+
+# inspecting Missing Values & NA in our columns
+```{r}
+# Checking Missing Values
+nrow(desired_Gisaid[desired_Gisaid$Clade == ""])
+nrow(desired_Gisaid[desired_Gisaid$Location == ""])
+nrow(desired_Gisaid[desired_Gisaid$`Submission date` == ""])
+
+# checking NA values
+
+sum(is.na(desired_Gisaid$Clade))
+sum(is.na(desired_Gisaid$Location))
+sum(is.na(desired_Gisaid$`Submission date`))
+
+# Get Rid of missing values 
+
+desired_Gisaid_1 <- desired_Gisaid[!(desired_Gisaid$Clade == "")]
+head(desired_Gisaid_1)
+
+```
+# Chaning the date format to Year-Month
+```{r}
+desired_Gisaid_1$date <- format(desired_Gisaid_1$`Submission date`, format = "%Y-%m")
+head(desired_Gisaid_1)
+```
+
+```{r}
+new_desired_Gisaid <- desired_Gisaid_1 %>% mutate(continent = case_when(
+                          startsWith(Location, "Asia") ~ "Asia",
+                          startsWith(Location, "Africa") ~ "Africa",
+                          startsWith(Location, "Europe") ~ "Europe",
+                          startsWith(Location, "North America") ~ "North America",
+                          startsWith(Location, "South America") ~ "South America",
+                          startsWith(Location, "Antarctica") ~ "Antarctica",
+                          startsWith(Location, "Oceania") ~ "Oceania"
+                                                  ))
+tail(new_desired_Gisaid)
+```
+
+# Plotting Our Data in Bar Chart 
+```{r}
+ggplot(new_desired_Gisaid, aes(date, fill = Clade)) + geom_bar(position = "fill") + 
+theme(axis.text.x = element_text(angle = 45)) + 
+scale_x_discrete(name = "Year_Month", breaks = c("2020-01", "2020-07", "2021-01", "2021-07", "2022-01", "2022-07")) + labs(y = "")
+
+```
+
+
+
+
+
+# Plotting our Data in a Pie Chart
+
+```{r}
+
+ggplot(new_desired_Gisaid, aes(x ="",fill = Clade)) + 
+geom_bar(position = "fill") +
+coord_polar(theta = 'y', start = 0) +
+facet_wrap(vars(continent)) +
+theme_void()
+
+```
